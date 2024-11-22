@@ -36,8 +36,12 @@ function formatUrl(url) {
         }
 
         const urlParts = new URL(url);
+        
+        // Handle home URL differently
         const cleanPath = urlParts.pathname.replace(/^\/|\/$/g, '');
-        return cleanPath ? cleanPath : '/';
+        
+        // If cleanPath is empty, return the domain
+        return cleanPath ? cleanPath : urlParts.hostname;
     } catch (error) {
         console.warn('URL formatting error:', error);
         return url;
@@ -58,6 +62,33 @@ function createUrlSelect(urlList) {
         option.textContent = `${index + 1}. ${url}`;
         urlSelect.appendChild(option);
     });
+
+    // Add click event to copy URL
+    urlSelect.onclick = copySelectedUrl;
+}
+
+function copySelectedUrl() {
+    const urlSelect = document.getElementById('urlSelect');
+    const selectedOption = urlSelect.options[urlSelect.selectedIndex];
+    
+    if (selectedOption) {
+        const urlToCopy = selectedOption.value;
+        
+        // Create a temporary textarea to copy the text
+        const tempTextArea = document.createElement('textarea');
+        tempTextArea.value = urlToCopy;
+        document.body.appendChild(tempTextArea);
+        
+        // Select and copy the text
+        tempTextArea.select();
+        document.execCommand('copy');
+        
+        // Remove the temporary textarea
+        document.body.removeChild(tempTextArea);
+        
+        // Optional: Show a small tooltip or alert
+        alert(`URL copiada: ${urlToCopy}`);
+    }
 }
 
 function processSitemap() {
