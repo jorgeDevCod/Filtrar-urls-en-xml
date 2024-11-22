@@ -94,14 +94,14 @@ function exportUrls(format = 'txt') {
         const blob = new Blob([urlsText], { type: 'text/plain' });
         const a = document.createElement('a');
         a.href = URL.createObjectURL(blob);
-        a.download = 'sitemap_urls.txt';
+        a.download = 'listado_urls.txt';
         a.click();
     } else if (format === 'xlsx') {
         // Excel export
         const worksheet = XLSX.utils.aoa_to_sheet(urls.map((url, index) => [index + 1, url]));
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, worksheet, 'URLs');
-        XLSX.writeFile(workbook, 'sitemap_urls.xlsx');
+        XLSX.writeFile(workbook, 'listado_urls.xlsx');
     }
 }
 
