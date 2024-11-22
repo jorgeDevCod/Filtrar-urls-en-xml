@@ -30,18 +30,13 @@ function parseSitemap(sitemap) {
 
 function formatUrl(url) {
     try {
-        // Add protocol if missing
+        // Ensure the URL has a protocol
         if (!url.startsWith('http://') && !url.startsWith('https://')) {
             url = 'https://' + url;
         }
 
-        const urlParts = new URL(url);
-        
-        // Handle home URL differently
-        const cleanPath = urlParts.pathname.replace(/^\/|\/$/g, '');
-        
-        // If cleanPath is empty, return the domain
-        return cleanPath ? cleanPath : urlParts.hostname;
+        // Return the full, normalized URL
+        return new URL(url).href;
     } catch (error) {
         console.warn('URL formatting error:', error);
         return url;
