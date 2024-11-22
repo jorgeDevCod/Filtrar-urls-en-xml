@@ -1,23 +1,47 @@
 function parseSitemap(sitemap) {
-    const parser = new DOMParser();
-    const xmlDoc = parser.parseFromString(sitemap, "application/xml");
-    const urls = xmlDoc.getElementsByTagName("loc");
-    const urlList = [];
+    try {
+        // Trim whitespace and remove any leading/trailing line breaks
+        sitemap = sitemap.trim();
 
-    for (let loc of urls) {
-        const url = loc.textContent;
-        const structuredUrl = formatUrl(url);
-        urlList.push(structuredUrl);
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(sitemap, "application/xml");
+    
+        // Check for parsing errors
+        const parseError = xmlDoc.querySelector('parsererror');
+        if (parseError) {
+            throw new Error('Invalid XML format.');
+        }
+
+        const urls = xmlDoc.getElementsByTagName("loc");
+        const urlList = [];
+
+        for (let loc of urls) {
+            const url = loc.textContent;
+            const structuredUrl = formatUrl(url);
+            urlList.push(structuredUrl);
+        }
+
+        return urlList;
+    } catch (error) {
+        console.error('Sitemap parsing error:', error);
+        throw error;
     }
-
-    return urlList;
 }
 
 function formatUrl(url) {
-    const urlParts = url.split('/').filter(part => part);
-    const structuredUrl = urlParts.join('/');
-    const endsWithSlash = url.endsWith('/');
-    return endsWithSlash ? `${structuredUrl}/` : structuredUrl;
+    try {
+        // Add protocol if missing
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+
+        const urlParts = new URL(url);
+        const cleanPath = urlParts.pathname.replace(/^\/|\/$/g, '');
+        return cleanPath ? cleanPath : '/';
+    } catch (error) {
+        console.warn('URL formatting error:', error);
+        return url;
+    }
 }
 
 function createUrlSelect(urlList) {
@@ -37,20 +61,50 @@ function createUrlSelect(urlList) {
 }
 
 function processSitemap() {
-    const sitemapInput = document.getElementById('sitemapInput').value;
-    const urlList = parseSitemap(sitemapInput);
+    const sitemapInput = document.getElementById('sitemapInput');
     const totalCount = document.getElementById('totalCount');
     const accordionContent = document.querySelector('.accordion-content');
 
-    // Open accordion if not already open
-    accordionContent.classList.add('active');
-    document.querySelector('.toggle-icon').style.transform = 'rotate(180deg)';
+    try {
+        const sitemapText = sitemapInput.value;
+        
+        // Validate input not empty
+        if (!sitemapText.trim()) {
+            alert('Por favor, ingrese un XML de sitemap.');
+            return;
+        }
 
-    if (urlList.length > 0) {
-        createUrlSelect(urlList);
-        totalCount.textContent = `Total de URLs: ${urlList.length}`;
-    } else {
-        totalCount.textContent = 'No se encontraron URLs.';
+        const urlList = parseSitemap(sitemapText);
+        
+        // Reset input style
+        sitemapInput.style.borderColor = 'var(--border-color)';
+        
+        // Open accordion if not already open
+        accordionContent.classList.add('active');
+        document.querySelector('.toggle-icon').style.transform = 'rotate(180deg)';
+
+        if (urlList.length > 0) {
+            createUrlSelect(urlList);
+            totalCount.textContent = `Total de URLs: ${urlList.length}`;
+        } else {
+            totalCount.textContent = 'No se encontraron URLs.';
+        }
+    } catch (error) {
+        // Improve error handling
+        let errorMessage = 'Error al procesar el XML';
+        if (error.message) {
+            errorMessage += `: ${error.message}`;
+        }
+        
+        // Highlight input with red border
+        sitemapInput.style.borderColor = 'red';
+        
+        // Show more informative alert
+        alert(errorMessage + '\n\nPor favor, verifique el formato del sitemap XML.');
+        
+        // Clear results
+        document.getElementById('urlSelect').innerHTML = '';
+        totalCount.textContent = '';
     }
 }
 
@@ -72,6 +126,9 @@ function clearInput() {
     document.getElementById('sitemapInput').value = '';
     document.getElementById('urlSelect').innerHTML = '';
     document.getElementById('totalCount').textContent = '';
+    
+    // Reset input border
+    document.getElementById('sitemapInput').style.borderColor = 'var(--border-color)';
     
     // Close accordion
     const accordionContent = document.querySelector('.accordion-content');
@@ -104,11 +161,3 @@ function exportUrls(format = 'txt') {
         XLSX.writeFile(workbook, 'listado_urls.xlsx');
     }
 }
-
-// Optional: Initialize anything needed when the DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Load SheetJS library dynamically
-    const script = document.createElement('script');
-    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.5/xlsx.full.min.js';
-    document.head.appendChild(script);
-});
